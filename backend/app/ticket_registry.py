@@ -1,127 +1,87 @@
 """
-ChargeKaru — Mock ticket & pass database
-==========================================
-Simulates the KSRTC ticketing backend (PNR + pass lookups) that a real
-deployment would integrate with. In production this would be a real API
-call to KSRTC's reservation system; here it's an in-memory mock so the
-whole project runs standalone with zero external dependencies.
+ChargeKaru — Ticket Registry
+A simulated in-memory KSRTC ticketing/pass database used to validate seats.
 """
 
-import random
-import string
 from datetime import datetime, timedelta
-from app.models import Ticket, Pass, PassType
+from typing import Optional
 
-FIRST_NAMES = ["Aditi", "Rahul", "Sneha", "Vikram", "Pooja", "Arjun", "Divya",
-               "Karthik", "Lakshmi", "Manoj", "Nisha", "Pradeep", "Ravi", "Sunita",
-               "Vinay", "Anjali", "Suresh", "Meera", "Ganesh", "Kavya"]
-LAST_NAMES = ["Sharma", "Reddy", "Gowda", "Iyer", "Nair", "Hegde", "Rao", "Patil",
-              "Shetty", "Naik", "Murthy", "Pillai", "Kumar", "Bhat"]
+from .models import BusPass, PassType, Ticket, generate_pass_id, generate_pnr
 
-ROUTES = [
-    ("Bengaluru - Mysuru", "KA-RT-101"),
-    ("Bengaluru - Mangaluru", "KA-RT-205"),
-    ("Bengaluru - Hubballi", "KA-RT-310"),
-    ("Mysuru - Coorg", "KA-RT-417"),
-    ("Bengaluru - Shivamogga", "KA-RT-522"),
-    ("Bengaluru - Belagavi", "KA-RT-630"),
-]
+# In-memory stores (demo only — would be a real DB / KSRTC API in production)
+TICKETS: dict[str, Ticket] = {}
+PASSES: dict[str, BusPass] = {}
+
+PASS_VALIDITY = {
+    PassType.DAILY: timedelta(days=1),
+    PassType.MONTHLY: timedelta(days=30),
+    PassType.STUDENT: timedelta(days=180),
+}
 
 
-def _random_name() -> str:
-    return f"{random.choice(FIRST_NAMES)} {random.choice(LAST_NAMES)}"
+def issue_ticket(bus_id: str, seat_no: str, passenger_name: str, hours_valid: float = 6) -> Ticket:
+    pnr = generate_pnr()
+    while pnr in TICKETS:
+        pnr = generate_pnr()
+    ticket = Ticket(
+        pnr=pnr,
+        bus_id=bus_id,
+        seat_no=seat_no,
+        passenger_name=passenger_name,
+        valid_until=datetime.utcnow() + timedelta(hours=hours_valid),
+    )
+    TICKETS[pnr] = ticket
+    return ticket
 
 
-def _random_pnr() -> str:
-    return "KS" + "".join(random.choices(string.digits, k=8))
+def issue_pass(pass_type: PassType, holder_name: str) -> BusPass:
+    pass_id = generate_pass_id(pass_type)
+    while pass_id in PASSES:
+        pass_id = generate_pass_id(pass_type)
+    bus_pass = BusPass(
+        pass_id=pass_id,
+        pass_type=pass_type,
+        holder_name=holder_name,
+        valid_until=datetime.utcnow() + PASS_VALIDITY[pass_type],
+    )
+    PASSES[pass_id] = bus_pass
+    return bus_pass
 
 
-def _random_pass_id() -> str:
-    return "KSP" + "".join(random.choices(string.digits, k=6))
+def validate_code(code: str) -> dict:
+    """Validate a PNR or Pass ID. Returns a dict describing the result."""
+    code = code.strip().upper()
+
+    if code in TICKETS:
+        ticket = TICKETS[code]
+        return {
+            "valid": ticket.is_valid,
+            "type": "ticket",
+            "holder_name": ticket.passenger_name,
+            "detail": ticket,
+        }
+
+    if code in PASSES:
+        bus_pass = PASSES[code]
+        return {
+            "valid": bus_pass.is_valid,
+            "type": "pass",
+            "holder_name": bus_pass.holder_name,
+            "detail": bus_pass,
+        }
+
+    return {"valid": False, "type": None, "holder_name": None, "detail": None}
 
 
-class TicketRegistry:
-    """In-memory registry simulating KSRTC's central ticket/pass database."""
-
-    def __init__(self):
-        self.tickets: dict[str, Ticket] = {}
-        self.passes: dict[str, Pass] = {}
-
-    def issue_ticket(self, route: str, seat_number: str | None = None,
-                      passenger_name: str | None = None,
-                      valid_minutes: int = 240) -> Ticket:
-        pnr = _random_pnr()
-        now = datetime.utcnow()
-        ticket = Ticket(
-            pnr=pnr,
-            passenger_name=passenger_name or _random_name(),
-            seat_number=seat_number,
-            route=route,
-            valid_from=now,
-            valid_until=now + timedelta(minutes=valid_minutes),
-            is_active=True,
-        )
-        self.tickets[pnr] = ticket
-        return ticket
-
-    def issue_pass(self, pass_type: PassType = PassType.MONTHLY,
-                    passenger_name: str | None = None) -> Pass:
-        pid = _random_pass_id()
-        now = datetime.utcnow()
-        duration = {
-            PassType.DAILY: timedelta(days=1),
-            PassType.MONTHLY: timedelta(days=30),
-            PassType.STUDENT: timedelta(days=90),
-        }[pass_type]
-        p = Pass(
-            pass_id=pid,
-            passenger_name=passenger_name or _random_name(),
-            pass_type=pass_type,
-            valid_from=now,
-            valid_until=now + duration,
-            is_active=True,
-        )
-        self.passes[pid] = p
-        return p
-
-    def validate(self, code: str) -> tuple[bool, str, Ticket | Pass | None]:
-        """
-        Validate a PNR or Pass ID.
-        Returns (is_valid, message, record)
-        """
-        code = code.strip().upper()
-        now = datetime.utcnow()
-
-        if code in self.tickets:
-            t = self.tickets[code]
-            if not t.is_active:
-                return False, "Ticket has been cancelled.", t
-            if now > t.valid_until:
-                return False, "Ticket has expired.", t
-            if now < t.valid_from:
-                return False, "Ticket is not yet valid.", t
-            return True, f"Valid ticket for {t.passenger_name} — {t.route}", t
-
-        if code in self.passes:
-            p = self.passes[code]
-            if not p.is_active:
-                return False, "Pass has been deactivated.", p
-            if now > p.valid_until:
-                return False, "Pass has expired.", p
-            return True, f"Valid {p.pass_type.value} pass for {p.passenger_name}", p
-
-        return False, "PNR / Pass ID not found in KSRTC records.", None
-
-
-# Global singleton used by the app
-registry = TicketRegistry()
-
-
-def seed_registry(num_tickets: int = 60, num_passes: int = 15):
-    """Pre-populate with realistic sample tickets/passes for the demo."""
-    for _ in range(num_tickets):
-        route, _ = random.choice(ROUTES)
-        registry.issue_ticket(route=route, valid_minutes=random.choice([120, 240, 360]))
-    for _ in range(num_passes):
-        registry.issue_pass(pass_type=random.choice(list(PassType)))
-    return registry
+def seed_sample_codes() -> dict:
+    """Seed a handful of ready-to-use demo codes for presentations."""
+    t1 = issue_ticket("BUS-1", "A1", "Ramesh Gowda")
+    t2 = issue_ticket("BUS-1", "A2", "Sandhya Rao")
+    t3 = issue_ticket("BUS-2", "B3", "Mohammed Imran")
+    p1 = issue_pass(PassType.STUDENT, "Anjali Shetty")
+    p2 = issue_pass(PassType.MONTHLY, "Pradeep Kumar")
+    p3 = issue_pass(PassType.DAILY, "Lakshmi Devi")
+    return {
+        "tickets": [t1.pnr, t2.pnr, t3.pnr],
+        "passes": [p1.pass_id, p2.pass_id, p3.pass_id],
+    }
