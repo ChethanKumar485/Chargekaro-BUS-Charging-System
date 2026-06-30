@@ -1,0 +1,86 @@
+<svg width="1040" height="230" viewBox="0 0 1040 230" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGlow1" cx="15%" cy="0%" r="60%">
+      <stop offset="0%" stop-color="#1a2230"/>
+      <stop offset="100%" stop-color="#0B0F14" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bgGlow2" cx="95%" cy="100%" r="60%">
+      <stop offset="0%" stop-color="#221a10"/>
+      <stop offset="100%" stop-color="#0B0F14" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7C166"/>
+      <stop offset="100%" stop-color="#C97F1F"/>
+    </linearGradient>
+    <filter id="boltShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#F2A93B" flood-opacity="0.55"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="1040" height="230" rx="22" fill="#0B0F14"/>
+  <rect width="1040" height="230" rx="22" fill="url(#bgGlow1)"/>
+  <rect width="1040" height="230" rx="22" fill="url(#bgGlow2)"/>
+  <rect x="0.75" y="0.75" width="1038.5" height="228.5" rx="21.5" fill="none" stroke="#222E3D" stroke-width="1.5"/>
+
+  <!-- decorative indicator-light strip, top -->
+  <g>
+    <circle cx="40" cy="34" r="4" fill="#F2A93B"/>
+    <circle cx="56" cy="34" r="4" fill="#3DDC84"/>
+    <circle cx="72" cy="34" r="4" fill="#222E3D"/>
+    <circle cx="88" cy="34" r="4" fill="#222E3D"/>
+  </g>
+  <text x="1000" y="38" text-anchor="end" font-family="Consolas, 'Courier New', monospace" font-size="13" fill="#586472" letter-spacing="2">KA · BUS · LIVE</text>
+
+  <!-- badge mark -->
+  <g transform="translate(58, 68)">
+    <rect x="0" y="0" width="92" height="92" rx="22" fill="url(#boltGrad)"/>
+    <rect x="0" y="0" width="92" height="92" rx="22" fill="none" stroke="#F2A93B" stroke-opacity="0.4" stroke-width="2"/>
+    <path filter="url(#boltShadow)" d="M52 14 L26 54 H44 L38 80 L68 38 H48 Z" fill="#13100a"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="178" y="118" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="56" fill="#E8EDF2" letter-spacing="-1">ChargeKaru</text>
+
+  <!-- tagline -->
+  <text x="180" y="148" font-family="Consolas, 'Courier New', monospace" font-size="15" fill="#8B98A5">Smart Seat-Charging System for KSRTC &amp; Public Transport</text>
+
+  <!-- kannada chip -->
+  <g transform="translate(180, 164)">
+    <rect x="0" y="0" width="158" height="28" rx="14" fill="#1c170b" stroke="#7A5A22" stroke-width="1"/>
+    <text x="79" y="19" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#F2A93B" letter-spacing="0.5">ಚಾರ್ಜ್ ಮಾಡು &#8226; "I'll charge it"</text>
+  </g>
+
+  <!-- right side: mini seat-state legend, transit-board style -->
+  <g transform="translate(700, 60)">
+    <rect x="0" y="0" width="300" height="135" rx="14" fill="#121922" stroke="#222E3D" stroke-width="1.25"/>
+    <text x="18" y="26" font-family="Consolas, 'Courier New', monospace" font-size="11" fill="#586472" letter-spacing="1.5">SEAT BAY · LIVE STATUS</text>
+
+    <!-- idle -->
+    <rect x="18" y="40" width="52" height="34" rx="8" fill="#182230" stroke="#222E3D"/>
+    <text x="44" y="61" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#8B98A5">A1</text>
+
+    <!-- unverified -->
+    <rect x="80" y="40" width="52" height="34" rx="8" fill="#241c0c" stroke="#7A5A22"/>
+    <text x="106" y="61" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#F2A93B">A2</text>
+
+    <!-- charging, glowing -->
+    <rect x="142" y="40" width="52" height="34" rx="8" fill="#0f2a1c" stroke="#3DDC84" stroke-width="1.4" filter="url(#glow)"/>
+    <text x="168" y="61" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#3DDC84">A3</text>
+    <path d="M170 44 L164 52 H169 L166 60 L174 50 H169 Z" fill="#3DDC84"/>
+
+    <!-- fault -->
+    <rect x="204" y="40" width="52" height="34" rx="8" fill="#2a1212" stroke="#5A2424"/>
+    <text x="230" y="61" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#FF5C5C">A4</text>
+
+    <text x="18" y="100" font-family="Consolas, monospace" font-size="11" fill="#586472">SEATED + TICKETED =</text>
+    <text x="18" y="118" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14" fill="#3DDC84">POWERED ⚡</text>
+  </g>
+</svg>
