@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ChargeKaru — Fleet Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<style>
+  :root{
+    --bg: #0B1929;
+    --panel: #122438;
+    --panel-2: #1E3A52;
+    --line: #24405B;
+    --text: #E2E8F0;
+    --text-dim: #7E97AC;
+    --charging: #10B981;
+    --charging-glow: #10B98155;
+    --waiting: #F59E0B;
+    --fault: #EF4444;
+    --idle: #2C4863;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  #root{min-height:100vh;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+
+  .app{display:grid; grid-template-columns: 280px 1fr 320px; min-height:100vh;}
+  @media (max-width: 980px){ .app{grid-template-columns: 1fr;} .sidebar,.activity{display:none;} }
+
+  .sidebar{background:var(--panel); border-right:1px solid var(--line); padding:20px 0; overflow-y:auto;}
+  .brand{padding:0 20px 18px 20px; border-bottom:1px solid var(--line); margin-bottom:14px;}
+  .brand-mark{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px;}
+  .brand-mark .bolt{color:var(--charging);}
+  .brand-sub{font-size:11px; color:var(--text-dim); margin-top:4px; letter-spacing:0.04em; text-transform:uppercase;}
+
+  .summary-strip{display:grid; grid-template-columns: 1fr 1fr; gap:8px; padding:0 20px 18px 20px; border-bottom:1px solid var(--line); margin-bottom:14px;}
+  .stat{background:var(--panel-2); border-radius:8px; padding:10px 12px;}
+  .stat-val{font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600;}
+  .stat-label{font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+
+  .bus-list{padding:0 12px;}
+  .bus-list-title{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); padding:0 8px 8px 8px;}
+  .bus-item{padding:12px; border-radius:10px; cursor:pointer; margin-bottom:6px; border:1px solid transparent; transition:background .15s;}
+  .bus-item:hover{background:var(--panel-2);}
+  .bus-item.active{background:var(--panel-2); border-color:var(--charging);}
+  .bus-item-top{display:flex; justify-content:space-between; align-items:center;}
+  .bus-reg{font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600;}
+  .bus-route{font-size:12px; color:var(--text-dim); margin-top:3px;}
+  .bus-mini-stats{display:flex; gap:10px; margin-top:8px; font-size:11px; color:var(--text-dim);}
+  .dot{width:7px;height:7px;border-radius:50%; display:inline-block; margin-right:4px;}
+  .dot.green{background:var(--charging); box-shadow:0 0 6px var(--charging-glow);}
+  .dot.amber{background:var(--waiting);}
+
+  .main{padding:24px 28px; overflow-y:auto;}
+  .main-header{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; flex-wrap:wrap; gap:14px;}
+  .bus-title{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:600;}
+  .bus-meta{color:var(--text-dim); font-size:13px; margin-top:4px;}
+  .bus-meta span{margin-right:14px;}
+
+  .legend{display:flex; gap:16px; font-size:12px; color:var(--text-dim); align-items:center;}
+  .legend-item{display:flex; align-items:center; gap:6px;}
+  .swatch{width:14px;height:14px;border-radius:4px;}
+
+  .deck{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px; position:relative;}
+  .deck-front{text-align:center; font-size:11px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:18px; padding-bottom:10px; border-bottom:1px dashed var(--line);}
+  .seat-grid{display:flex; flex-direction:column; gap:10px; max-width:420px; margin:0 auto;}
+  .seat-row{display:grid; grid-template-columns: 1fr 1fr 28px 1fr 1fr; gap:8px; align-items:center;}
+  .aisle{}
+
+  .seat{
+    aspect-ratio: 1.15;
+    border-radius:10px;
+    background:var(--idle);
+    border:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+    position:relative;
+    transition: background .25s, box-shadow .25s, transform .1s;
+    user-select:none;
+  }
+  .seat:active{transform:scale(0.96);}
+  .seat .num{font-size:12px; font-weight:600; opacity:0.85;}
+  .seat .icon{font-size:14px; margin-top:2px;}
+  .seat.unverified{background:#3A2E12; border-color:var(--waiting);}
+  .seat.charging{background:#0F3D2E; border-color:var(--charging); box-shadow:0 0 0 1px var(--charging), 0 0 14px var(--charging-glow);}
+  .seat.charging .icon{animation: pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.55; transform:scale(0.9);} }
+
+  .seat-tooltip{
+    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+    background:#0A1622; border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    font-family:'Inter',sans-serif; font-size:12px; white-space:nowrap; z-index:10;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  .seat-tooltip .row{display:flex; justify-content:space-between; gap:14px; margin-bottom:3px;}
+  .seat-tooltip .row span:first-child{color:var(--text-dim);}
+
+  .panel-actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .btn{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-family:'Inter',sans-serif;
+    transition:background .15s;
+  }
+  .btn:hover{background:#27445F;}
+  .btn.primary{background:var(--charging); border-color:var(--charging); color:#06241B; font-weight:600;}
+  .btn.primary:hover{background:#0EA571;}
+  .btn.danger{background:transparent; border-color:var(--fault); color:var(--fault);}
+
+  .validate-box{margin-top:8px; display:flex; gap:6px;}
+  .validate-box input{
+    background:#0A1622; border:1px solid var(--line); color:var(--text); border-radius:6px;
+    padding:6px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; width:140px;
+  }
+
+  .activity{background:var(--panel); border-left:1px solid var(--line); padding:20px; overflow-y:auto;}
+  .activity-title{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:14px;}
+  .log-entry{padding:10px 0; border-bottom:1px solid var(--line); font-size:12.5px;}
+  .log-entry .seat-tag{font-family:'JetBrains Mono',monospace; color:var(--charging); font-weight:600;}
+  .log-entry .time{color:var(--text-dim); font-size:10.5px; margin-top:2px;}
+
+  .topline{display:flex; justify-content:space-between; align-items:center; padding:14px 28px; border-bottom:1px solid var(--line); grid-column: 1/-1;}
+
+  .pulse-power{
+    display:flex; align-items:center; gap:8px; background:var(--panel-2); padding:8px 14px; border-radius:20px; font-family:'JetBrains Mono',monospace; font-size:13px;
+  }
+  .pulse-power .bolt{color:var(--waiting);}
+
+  .empty-state{color:var(--text-dim); text-align:center; padding:60px 20px; font-size:13px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-source" id="app-source">
+
+const { useState, useEffect, useRef, useCallback } = React;
+const API = "http://localhost:8000";
+
+function timeAgo(iso){
+  if(!iso) return "";
+  const s = Math.max(0, Math.floor((Date.now() - new Date(iso.endsWith("Z") ? iso : iso + "Z").getTime())/1000));
+  if(s < 60) return s + "s ago";
+  const m = Math.floor(s/60);
+  if(m < 60) return m + "m ago";
+  return Math.floor(m/60) + "h ago";
+}
+
+function Seat({seat, busId, onAction, hovered, setHovered}){
+  const stateClass = seat.state === "charging" ? "charging"
+    : seat.state === "occupied_unverified" ? "unverified" : "";
+  const icon = seat.state === "charging" ? "⚡" : seat.state === "occupied_unverified" ? "👤" : "▫";
+  const [code, setCode] = useState("");
+
+  return (
+    <div className="seat-wrap" style={{position:"relative"}}
+      onMouseEnter={()=>setHovered(seat.seat_number)}
+      onMouseLeave={()=>setHovered(null)}>
+      <div className={"seat " + stateClass}>
+        <div className="num">{seat.seat_number}</div>
+        <div className="icon">{icon}</div>
+      </div>
+      {hovered === seat.seat_number && (
+        <div className="seat-tooltip">
+          <div className="row"><span>State</span><span>{seat.state.replace("_"," ")}</span></div>
+          <div className="row"><span>Pressure</span><span>{seat.pressure_detected ? "Detected" : "None"}</span></div>
+          <div className="row"><span>Ticket</span><span>{seat.ticket_validated ? seat.bound_pnr_or_pass : "Not verified"}</span></div>
+          {seat.state === "charging" && <div className="row"><span>Energy</span><span>{seat.session_wh_used.toFixed(2)} Wh</span></div>}
+          <div className="panel-actions">
+            {!seat.pressure_detected && <button className="btn primary" onClick={()=>onAction(busId, seat.seat_number, "board")}>Simulate board</button>}
+            {seat.pressure_detected && <button className="btn danger" onClick={()=>onAction(busId, seat.seat_number, "leave")}>Simulate exit</button>}
+          </div>
+          {seat.pressure_detected && !seat.ticket_validated && (
+            <div className="validate-box">
+              <input placeholder="PNR / Pass ID" value={code} onChange={e=>setCode(e.target.value)} />
+              <button className="btn primary" onClick={()=>{onAction(busId, seat.seat_number, "validate", code); setCode("");}}>Verify</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App(){
+  const [buses, setBuses] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [selectedBusId, setSelectedBusId] = useState(null);
+  const [busDetail, setBusDetail] = useState(null);
+  const [hovered, setHovered] = useState(null);
+  const [log, setLog] = useState([]);
+  const [error, setError] = useState(null);
+  const lastEventsRef = useRef({});
+
+  const fetchBuses = useCallback(async ()=>{
+    try{
+      const res = await fetch(API + "/fleet/buses");
+      const data = await res.json();
+      setBuses(data);
+      setError(null);
+      if(!selectedBusId && data.length) setSelectedBusId(data[0].bus_id);
+    }catch(e){ setError("Can't reach backend at " + API + ". Is uvicorn running?"); }
+  }, [selectedBusId]);
+
+  const fetchSummary = useCallback(async ()=>{
+    try{
+      const res = await fetch(API + "/fleet/summary");
+      setSummary(await res.json());
+    }catch(e){}
+  }, []);
+
+  const fetchBusDetail = useCallback(async (busId)=>{
+    if(!busId) return;
+    try{
+      const res = await fetch(API + "/fleet/buses/" + busId);
+      const data = await res.json();
+      setBusDetail(data);
+      // diff seats for activity log
+      Object.values(data.seats).forEach(seat=>{
+        const prev = lastEventsRef.current[seat.seat_number];
+        if(seat.last_event && seat.last_event !== prev){
+          setLog(l => [{seat: seat.seat_number, text: seat.last_event, time: new Date().toISOString()}, ...l].slice(0,40));
+        }
+        lastEventsRef.current[seat.seat_number] = seat.last_event;
+      });
+    }catch(e){}
+  }, []);
+
+  useEffect(()=>{ fetchBuses(); fetchSummary(); }, []);
+  useEffect(()=>{ fetchBusDetail(selectedBusId); }, [selectedBusId]);
+
+  useEffect(()=>{
+    const interval = setInterval(()=>{
+      fetchBuses(); fetchSummary(); fetchBusDetail(selectedBusId);
+      fetch(API + "/simulate/tick", {method:"POST"}).catch(()=>{});
+    }, 2500);
+    return ()=>clearInterval(interval);
+  }, [selectedBusId, fetchBuses, fetchSummary, fetchBusDetail]);
+
+  const handleAction = async (busId, seatNumber, action, code) => {
+    try{
+      if(action === "board") await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/board`, {method:"POST"});
+      if(action === "leave") await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/leave`, {method:"POST"});
+      if(action === "validate") await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/validate`, {
+        method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({code})
+      });
+      fetchBusDetail(busId); fetchBuses(); fetchSummary();
+    }catch(e){}
+  };
+
+  if(error){
+    return <div className="empty-state" style={{paddingTop:120}}>
+      <div style={{fontSize:15, marginBottom:8, color:"#E2E8F0"}}>⚠ {error}</div>
+      <div>Start it with: <code>uvicorn app.main:app --reload --port 8000</code> from the backend folder.</div>
+    </div>;
+  }
+
+  const seatList = busDetail ? Object.values(busDetail.seats).sort((a,b)=> a.seat_number.localeCompare(b.seat_number, undefined, {numeric:true})) : [];
+  const rows = [];
+  for(let i=0;i<seatList.length;i+=4){ rows.push(seatList.slice(i,i+4)); }
+
+  return (
+    <div className="app">
+      <div className="topline" style={{gridColumn:"1/-1"}}>
+        <div className="brand-mark"><span className="bolt">⚡</span> ChargeKaru <span style={{color:"var(--text-dim)", fontWeight:500, fontSize:13}}>Fleet Control</span></div>
+        {summary && (
+          <div className="pulse-power">
+            <span className="bolt">⚡</span> {summary.total_power_draw_w.toFixed(0)} W live draw across fleet
+          </div>
+        )}
+      </div>
+
+      <div className="sidebar">
+        {summary && (
+          <div className="summary-strip">
+            <div className="stat"><div className="stat-val">{summary.charging_seats}</div><div className="stat-label">Charging now</div></div>
+            <div className="stat"><div className="stat-val">{summary.occupied_seats}</div><div className="stat-label">Seats occupied</div></div>
+            <div className="stat"><div className="stat-val">{summary.active_buses}</div><div className="stat-label">Buses active</div></div>
+            <div className="stat"><div className="stat-val">{summary.total_seats}</div><div className="stat-label">Total seats</div></div>
+          </div>
+        )}
+        <div className="bus-list">
+          <div className="bus-list-title">Fleet ({buses.length} buses)</div>
+          {buses.map(b=>(
+            <div key={b.bus_id} className={"bus-item" + (b.bus_id===selectedBusId?" active":"")} onClick={()=>setSelectedBusId(b.bus_id)}>
+              <div className="bus-item-top">
+                <span className="bus-reg">{b.registration_number}</span>
+              </div>
+              <div className="bus-route">{b.route_name}</div>
+              <div className="bus-mini-stats">
+                <span><span className="dot green"></span>{b.charging_count} charging</span>
+                <span><span className="dot amber"></span>{b.occupied_count} seated</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="main">
+        {busDetail && (
+          <React.Fragment>
+            <div className="main-header">
+              <div>
+                <div className="bus-title">{busDetail.registration_number} — {busDetail.bus_type}</div>
+                <div className="bus-meta">
+                  <span>{busDetail.route_name}</span>
+                  <span>Conductor: {busDetail.conductor_name}</span>
+                  <span>Driver: {busDetail.driver_name}</span>
+                </div>
+              </div>
+              <div className="legend">
+                <div className="legend-item"><span className="swatch" style={{background:"var(--idle)"}}></span>Empty</div>
+                <div className="legend-item"><span className="swatch" style={{background:"#3A2E12", border:"1px solid var(--waiting)"}}></span>Seated, unverified</div>
+                <div className="legend-item"><span className="swatch" style={{background:"#0F3D2E", border:"1px solid var(--charging)"}}></span>Charging</div>
+              </div>
+            </div>
+
+            <div className="deck">
+              <div className="deck-front">Front of bus — driver &amp; conductor</div>
+              <div className="seat-grid">
+                {rows.map((row, i)=>(
+                  <div className="seat-row" key={i}>
+                    <Seat seat={row[0]} busId={selectedBusId} onAction={handleAction} hovered={hovered} setHovered={setHovered} />
+                    {row[1] && <Seat seat={row[1]} busId={selectedBusId} onAction={handleAction} hovered={hovered} setHovered={setHovered} />}
+                    <div className="aisle"></div>
+                    {row[2] && <Seat seat={row[2]} busId={selectedBusId} onAction={handleAction} hovered={hovered} setHovered={setHovered} />}
+                    {row[3] && <Seat seat={row[3]} busId={selectedBusId} onAction={handleAction} hovered={hovered} setHovered={setHovered} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{fontSize:11, color:"var(--text-dim)", marginTop:14, textAlign:"center"}}>
+              Hover a seat to inspect it &amp; simulate boarding / ticket verification — this stands in for the real seat-pressure sensor + NFC/QR scan in a physical deployment.
+            </div>
+          </React.Fragment>
+        )}
+      </div>
+
+      <div className="activity">
+        <div className="activity-title">Live activity</div>
+        {log.length === 0 && <div className="empty-state" style={{padding:"30px 0"}}>No events yet — board a seat to begin.</div>}
+        {log.map((e,i)=>(
+          <div className="log-entry" key={i}>
+            <div><span className="seat-tag">{e.seat}</span> — {e.text}</div>
+            <div className="time">{timeAgo(e.time)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+<script>
+  (function(){
+    var src = document.getElementById('app-source').textContent;
+    var output = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
+    var s = document.createElement('script');
+    s.textContent = output;
+    document.body.appendChild(s);
+  })();
+</script>
+</body>
+</html>

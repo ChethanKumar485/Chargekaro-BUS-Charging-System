@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ChargeKaru — My Seat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<style>
+  :root{
+    --bg: #0B1929;
+    --panel: #122438;
+    --panel-2: #1E3A52;
+    --line: #24405B;
+    --text: #E2E8F0;
+    --text-dim: #7E97AC;
+    --charging: #10B981;
+    --charging-glow: #10B98166;
+    --waiting: #F59E0B;
+    --fault: #EF4444;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif; min-height:100vh;}
+  #root{min-height:100vh; display:flex; justify-content:center;}
+  .phone{width:100%; max-width:430px; min-height:100vh; padding:20px 20px 40px 20px; display:flex; flex-direction:column;}
+
+  .top{display:flex; align-items:center; gap:8px; margin-bottom:24px;}
+  .top .bolt{color:var(--charging); font-size:18px;}
+  .top .name{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px;}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:22px; margin-bottom:16px;}
+
+  .select-row label{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); display:block; margin-bottom:6px;}
+  select, input{
+    width:100%; background:#0A1622; border:1px solid var(--line); color:var(--text);
+    padding:11px 12px; border-radius:10px; font-family:'JetBrains Mono',monospace; font-size:14px; margin-bottom:14px;
+  }
+
+  .btn{
+    width:100%; background:var(--charging); border:none; color:#06241B; font-weight:600;
+    padding:13px; border-radius:10px; font-size:14px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn.secondary{background:var(--panel-2); color:var(--text); border:1px solid var(--line);}
+
+  .status-hero{
+    display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 16px;
+  }
+  .status-icon{font-size:54px; margin-bottom:14px;}
+  .status-icon.pulse{animation: pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.6; transform:scale(0.92);}}
+  .status-title{font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:600; margin-bottom:6px;}
+  .status-sub{font-size:13px; color:var(--text-dim); line-height:1.5;}
+
+  .status-charging .status-title{color:var(--charging);}
+  .status-waiting .status-title{color:var(--waiting);}
+
+  .detail-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .detail-row:last-child{border-bottom:none;}
+  .detail-row span:first-child{color:var(--text-dim);}
+  .detail-row span:last-child{font-family:'JetBrains Mono',monospace;}
+
+  .tips{font-size:12px; color:var(--text-dim); line-height:1.6;}
+  .tips li{margin-bottom:6px;}
+
+  .badge{
+    display:inline-block; font-size:10px; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:0.04em; font-weight:600;
+  }
+  .badge.green{background:#0F3D2E; color:var(--charging); border:1px solid var(--charging);}
+  .badge.amber{background:#3A2E12; color:var(--waiting); border:1px solid var(--waiting);}
+
+  .error-box{background:#3A1414; border:1px solid var(--fault); color:#FCA5A5; padding:12px 14px; border-radius:10px; font-size:13px; margin-bottom:14px;}
+  .footer-note{text-align:center; font-size:11px; color:var(--text-dim); margin-top:auto; padding-top:30px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-source" id="app-source">
+const { useState, useEffect, useCallback } = React;
+const API = "http://localhost:8000";
+
+function App(){
+  const [buses, setBuses] = useState([]);
+  const [busId, setBusId] = useState("");
+  const [seatNumber, setSeatNumber] = useState("1A");
+  const [code, setCode] = useState("");
+  const [seat, setSeat] = useState(null);
+  const [busInfo, setBusInfo] = useState(null);
+  const [err, setErr] = useState(null);
+  const [bound, setBound] = useState(false);
+
+  useEffect(()=>{
+    fetch(API + "/fleet/buses").then(r=>r.json()).then(data=>{
+      setBuses(data);
+      if(data.length) setBusId(data[0].bus_id);
+    }).catch(()=> setErr("Can't reach the ChargeKaru backend. Make sure it's running."));
+  }, []);
+
+  const refresh = useCallback(()=>{
+    if(!bound || !busId || !seatNumber) return;
+    fetch(`${API}/fleet/buses/${busId}`).then(r=>r.json()).then(data=>{
+      setBusInfo(data);
+      setSeat(data.seats[seatNumber]);
+    }).catch(()=>{});
+  }, [bound, busId, seatNumber]);
+
+  useEffect(()=>{
+    if(!bound) return;
+    refresh();
+    const id = setInterval(refresh, 2000);
+    return ()=>clearInterval(id);
+  }, [bound, refresh]);
+
+  const handleBoard = async () => {
+    setErr(null);
+    try{
+      // simulate boarding (pressure sensor) for the chosen seat
+      await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/board`, {method:"POST"});
+      if(code.trim()){
+        const res = await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/validate`, {
+          method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({code})
+        });
+        const data = await res.json();
+        if(!data.message || (data.seat && !data.seat.ticket_validated)){
+          setErr(data.message || "Could not verify ticket.");
+        }
+      }
+      setBound(true);
+    }catch(e){
+      setErr("Could not reach the backend.");
+    }
+  };
+
+  const handleLeave = async () => {
+    await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/leave`, {method:"POST"});
+    setBound(false); setSeat(null);
+  };
+
+  if(!bound){
+    return (
+      <div className="phone">
+        <div className="top"><span className="bolt">⚡</span><span className="name">ChargeKaru</span></div>
+        <div className="card">
+          <div style={{fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:16, marginBottom:4}}>Find your seat</div>
+          <div style={{fontSize:12.5, color:"var(--text-dim)", marginBottom:18}}>This simulates tapping/boarding at your seat with your ticket or pass.</div>
+
+          {err && <div className="error-box">{err}</div>}
+
+          <div className="select-row">
+            <label>Your bus</label>
+            <select value={busId} onChange={e=>setBusId(e.target.value)}>
+              {buses.map(b=> <option key={b.bus_id} value={b.bus_id}>{b.registration_number} — {b.route_name}</option>)}
+            </select>
+          </div>
+          <div className="select-row">
+            <label>Seat number</label>
+            <input value={seatNumber} onChange={e=>setSeatNumber(e.target.value.toUpperCase())} placeholder="e.g. 1A" />
+          </div>
+          <div className="select-row">
+            <label>PNR or Pass ID (optional now, can verify after boarding)</label>
+            <input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="e.g. KS12345678" />
+          </div>
+          <button className="btn" onClick={handleBoard}>I've boarded — check my seat</button>
+        </div>
+        <div className="footer-note">KSRTC Smart Charging · Charging only activates once your seat sensor and ticket both check out.</div>
+      </div>
+    );
+  }
+
+  const charging = seat && seat.state === "charging";
+  const waiting = seat && seat.state === "occupied_unverified";
+
+  return (
+    <div className="phone">
+      <div className="top"><span className="bolt">⚡</span><span className="name">ChargeKaru</span></div>
+
+      <div className={"card status-hero " + (charging ? "status-charging" : waiting ? "status-waiting" : "")}>
+        <div className={"status-icon " + (charging ? "pulse" : "")}>{charging ? "⚡" : waiting ? "⏳" : "🔌"}</div>
+        <div className="status-title">
+          {charging ? "Charging" : waiting ? "Verifying your ticket…" : "Socket off"}
+        </div>
+        <div className="status-sub">
+          {charging && "Your phone is charging. We'll stop automatically if you leave your seat."}
+          {waiting && "Seat sensor detected you, but we couldn't confirm a valid ticket yet. Ask your conductor to verify, or enter your PNR/Pass below."}
+          {!charging && !waiting && "Seat sensor not detecting you. Make sure you're seated."}
+        </div>
+        {seat && <div style={{marginTop:14}}>
+          <span className={"badge " + (charging ? "green" : "amber")}>{seat.state.replace("_"," ")}</span>
+        </div>}
+      </div>
+
+      {waiting && (
+        <div className="card">
+          <label style={{fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", color:"var(--text-dim)", display:"block", marginBottom:8}}>Verify your ticket</label>
+          <input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="PNR or Pass ID" />
+          <button className="btn" onClick={async ()=>{
+            const res = await fetch(`${API}/fleet/buses/${busId}/seats/${seatNumber}/validate`, {
+              method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({code})
+            });
+            const data = await res.json();
+            if(!data.seat || !data.seat.ticket_validated) setErr(data.message);
+            else setErr(null);
+            refresh();
+          }}>Verify ticket</button>
+          {err && <div className="error-box" style={{marginTop:10}}>{err}</div>}
+        </div>
+      )}
+
+      <div className="card">
+        <div className="detail-row"><span>Bus</span><span>{busInfo?.registration_number}</span></div>
+        <div className="detail-row"><span>Seat</span><span>{seatNumber}</span></div>
+        <div className="detail-row"><span>Route</span><span>{busInfo?.route_name}</span></div>
+        {charging && <div className="detail-row"><span>Energy used</span><span>{seat.session_wh_used.toFixed(2)} Wh</span></div>}
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:12.5, fontWeight:600, marginBottom:10}}>Good to know</div>
+        <ul className="tips">
+          <li>Charging starts only when you're seated AND your ticket is verified — nobody can draw power without a valid fare.</li>
+          <li>If you change seats, tap "check my seat" again for the new seat number.</li>
+          <li>Charging stops automatically the moment you stand up, for safety and fairness to the next passenger.</li>
+        </ul>
+      </div>
+
+      <button className="btn secondary" onClick={handleLeave}>I'm leaving my seat</button>
+      <div className="footer-note">KSRTC Smart Charging</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+<script>
+  (function(){
+    var src = document.getElementById('app-source').textContent;
+    var output = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
+    var s = document.createElement('script');
+    s.textContent = output;
+    document.body.appendChild(s);
+  })();
+</script>
+</body>
+</html>
