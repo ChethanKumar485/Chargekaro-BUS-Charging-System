@@ -105,7 +105,7 @@ USB Socket OFF, state resets
                   FastAPI Backend
                   (Core Logic Layer)
                            │
-      ┌──────────────┬───────────────┬──────────────┐
+      ┌──────────────┬───────────────┬
       ▼              ▼               ▼
  Seat Sensor     Ticket Registry   Socket Relay
  (simulated)      (simulated)      (simulated)
@@ -136,13 +136,15 @@ Simple. Reliable. Fraud-proof.
 
 A transit departure-board styled console: live fleet summary, per-bus cards, and a seat-bay grid where every tile reflects real sensor + ticket state in real time.
 
-![ChargeKaru Fleet Console](docs/screenshots/dashboard.png)
+
+<<img width="1400" height="1193" alt="image" src="https://github.com/user-attachments/assets/c164736d-bae3-43d0-9814-a8e4d5ca3e61" />
+
 
 ### Passenger View — mobile
 
 A mobile-first status card showing exactly what's happening with a rider's own socket, complete with a live energy ring and a one-tap ticket validator.
 
-![ChargeKaru Passenger View](docs/screenshots/passenger.png)
+<img width="420" height="982" alt="image" src="https://github.com/user-attachments/assets/292e3821-98f0-4403-9636-a81d6a79af41" />
 
 ---
 
@@ -197,11 +199,42 @@ Designed around a **transit departure-board** aesthetic — built to feel like a
 
 ---
 
+## 🚌 Journey Simulation
+
+<img width="740" height="520" alt="journey_01_enter_bus" src="https://github.com/user-attachments/assets/ab9beb5f-12c8-49e6-bbc8-5842ed86e48d" />
+
+---
+
+<img width="740" height="520" alt="journey_02_sit_down" src="https://github.com/user-attachments/assets/a8e8853b-f35c-4dd1-8700-18c7ec1832e0" />
+
+---
+
+<img width="740" height="520" alt="journey_03_ticket_scan" src="https://github.com/user-attachments/assets/eeed8f05-6ee9-4cd3-a1a9-fb13180899a1" />
+
+---
+
+<img width="740" height="520" alt="journey_04_charging_on" src="https://github.com/user-attachments/assets/4c875d07-a96e-4a8c-aa29-cbdd97360b11" />
+
+---
+
+<img width="740" height="520" alt="journey_05_phone_charges" src="https://github.com/user-attachments/assets/e43d6114-ee89-453c-b23a-bcb89772fc8d" />
+
+---
+
+<img width="740" height="520" alt="journey_06_stand_up" src="https://github.com/user-attachments/assets/97c1dace-2303-4944-89f4-a9fb137f6215" />
+
+---
+
+<img width="740" height="520" alt="journey_07_no_ticket" src="https://github.com/user-attachments/assets/93de5571-5f3f-467a-ae77-4ccbbb62e707" />
+
+---
+
+
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/yourname/chargekaru
-cd chargekaru/backend
+git clone https://github.com/ChethanKumar485/Chargekaro-BUS-Charging-System
+cd Chargekaro-BUS-Charging-System/backend
 
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
@@ -316,8 +349,7 @@ Released under the **MIT License** — free to use, modify, and build on.
 If this project is useful to you, consider starring the repository — it helps others discover it.
 
 <div align="center">
-
 *Built as a software-simulated proof-of-concept for a KSRTC Smart Bus initiative.*
 *All passenger names, PNRs, and bus registrations are randomly generated.*
-
+        
 </div>
