@@ -349,7 +349,8 @@ Released under the **MIT License** — free to use, modify, and build on.
 If this project is useful to you, consider starring the repository — it helps others discover it.
  
 <div align="center">
-*Built as a software-simulated proof-of-concept for a KSRTC Smart Bus initiative.*
-*All passenger names, PNRs, and bus registrations are randomly generated.*
+        
+Built as a software-simulated proof-of-concept for a KSRTC Smart Bus initiative.
+All passenger names, PNRs, and bus registrations are randomly generated.
  
 </div>
