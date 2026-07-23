@@ -324,7 +324,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = "http://localhost:8000";
+const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? "http://localhost:8000"
+  : "https://YOUR-RAILWAY-URL.up.railway.app";
 let currentBus = null;
 let currentSeat = null;
 let sampleCodes = null;
