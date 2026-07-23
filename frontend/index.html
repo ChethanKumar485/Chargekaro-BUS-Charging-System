@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChargeKaru — Smart Seat-Charging System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F14; --panel:#121922; --line:#222E3D;
+    --amber:#F2A93B; --green:#3DDC84; --text:#E8EDF2; --muted:#8B98A5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;min-height:100vh;
+    background:
+      radial-gradient(900px 500px at 50% -10%, #1a2230 0%, transparent 60%),
+      var(--bg);
+    color:var(--text);font-family:'Inter',sans-serif;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .wrap{max-width:480px;width:100%;text-align:center;}
+  .mark{
+    width:64px;height:64px;border-radius:16px;margin:0 auto 20px;
+    background:linear-gradient(155deg,var(--amber),#c97f1f);
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+  }
+  h1{font-family:'Space Grotesk',sans-serif;font-size:26px;margin:0 0 6px;}
+  .kannada{font-size:12px;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+  p.tagline{color:var(--muted);font-size:14px;margin:0 0 32px;}
+  .cards{display:flex;flex-direction:column;gap:14px;}
+  a.card{
+    display:block;text-align:left;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:18px 20px;text-decoration:none;color:var(--text);
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  a.card:hover{border-color:var(--amber);transform:translateY(-2px);}
+  a.card .icon{font-size:20px;margin-right:8px;}
+  a.card .title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;}
+  a.card .desc{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  a.card.green:hover{border-color:var(--green);}
+  footer{margin-top:28px;font-size:11px;color:#586472;}
+  footer a{color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark">⚡</div>
+  <h1>ChargeKaru</h1>
+  <div class="kannada">ಚಾರ್ಜ್ ಮಾಡು</div>
+  <p class="tagline">Smart seat-charging system for KSRTC buses — seated + ticketed = powered.</p>
+
+  <div class="cards">
+    <a class="card" href="frontend/dashboard.html">
+      <span class="icon">🚌</span><span class="title">Fleet Console</span>
+      <div class="desc">Conductor / operations dashboard — live seat grid across the whole fleet.</div>
+    </a>
+    <a class="card green" href="frontend/passenger.html">
+      <span class="icon">📱</span><span class="title">Passenger View</span>
+      <div class="desc">Check your own seat's charging status and validate your ticket.</div>
+    </a>
+  </div>
+
+  <footer>
+    Backend API docs: <a href="https://chargekaro-bus-charging-system.onrender.com/docs">/docs</a>
+  </footer>
+</div>
+</body>
+</html>
