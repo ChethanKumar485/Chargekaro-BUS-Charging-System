@@ -113,6 +113,22 @@ USB Socket OFF, state resets
 
 ---
 
+# 🌐 GitHub Pages Deployment
+
+This project uses **GitHub Actions** to automatically build and deploy the application to **GitHub Pages**.
+
+Every push to the **main** branch automatically:
+
+- Installs dependencies
+- Builds the project
+- Deploys to GitHub Pages
+
+Live Website:
+
+**https://chethankumar485.github.io/Chargekaro-BUS-Charging-System/**
+
+---
+
 ## 🧠 Charging Logic
 
 The entire system reduces to one rule, enforced server-side in `Seat.recompute_state()`:
